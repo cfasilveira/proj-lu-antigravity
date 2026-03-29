@@ -25,7 +25,8 @@ import {
   UserCheck,
   Map,
   PieChart as PieChartIcon,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  Edit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -136,6 +137,9 @@ export default function App() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isRecruiterLoggedIn, setIsRecruiterLoggedIn] = useState(false);
   const [recruiterTab, setRecruiterTab] = useState<'candidates' | 'jobs' | 'dashboard' | 'add_job'>('dashboard');
+  const [dashboardUfFilter, setDashboardUfFilter] = useState<string>('');
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
 
   useEffect(() => {
     localStorage.setItem('rh_jobs', JSON.stringify(jobs));
@@ -221,11 +225,36 @@ export default function App() {
     alert('Vaga cadastrada com sucesso!');
   };
 
+  const handleUpdateJob = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingJob) return;
+
+    const formData = new FormData(e.currentTarget);
+    
+    const updatedJob: Job = {
+      ...editingJob,
+      title: formData.get('title') as string,
+      city: formData.get('city') as string,
+      uf: formData.get('uf') as string,
+      salary: Number(formData.get('salary')),
+      type: formData.get('type') as JobType,
+      description: formData.get('description') as string,
+    };
+
+    setJobs(jobs.map(j => j.id === editingJob.id ? updatedJob : j));
+    setEditingJob(null);
+    alert('Vaga atualizada com sucesso!');
+  };
+
   // --- Dashboard Data ---
   const dashboardStats = useMemo(() => {
     const totalJobs = jobs.length;
     const totalCandidates = candidates.length;
     
+    // Data filtered for charts
+    const filteredJobs = dashboardUfFilter ? jobs.filter(j => j.uf === dashboardUfFilter) : jobs;
+    const filteredCandidates = dashboardUfFilter ? candidates.filter(c => c.uf === dashboardUfFilter) : candidates;
+
     // Vagas preenchidas (simulação: vagas com pelo menos 1 candidato)
     const filledJobs = jobs.filter(j => candidates.some(c => c.jobId === j.id)).length;
     const filledPercentage = totalJobs > 0 ? (filledJobs / totalJobs) * 100 : 0;
@@ -243,6 +272,9 @@ export default function App() {
     const mostWantedPercent = totalCandidates > 0 && mostWanted ? ((mostWanted[1] as number) / totalCandidates) * 100 : 0;
     const leastWantedPercent = totalCandidates > 0 && leastWanted ? ((leastWanted[1] as number) / totalCandidates) * 100 : 0;
 
+    const mostWantedJob = mostWanted ? jobs.find(j => j.id === mostWanted[0])?.title : '-';
+    const leastWantedJob = leastWanted ? jobs.find(j => j.id === leastWanted[0])?.title : '-';
+
     // UF com mais/menos vagas
     const ufCounts = jobs.reduce((acc, j) => {
       acc[j.uf] = (acc[j.uf] || 0) + 1;
@@ -259,20 +291,22 @@ export default function App() {
       totalCandidates,
       mostWantedPercent,
       leastWantedPercent,
+      mostWantedJob,
+      leastWantedJob,
       ufMost,
       ufLeast,
       ufCounts,
       genderDist: [
-        { name: 'M', value: candidates.filter(c => c.gender === 'M').length },
-        { name: 'F', value: candidates.filter(c => c.gender === 'F').length }
+        { name: 'M', value: filteredCandidates.filter(c => c.gender === 'M').length },
+        { name: 'F', value: filteredCandidates.filter(c => c.gender === 'F').length }
       ],
-      candidatesPerJob: jobs.map(j => ({
+      candidatesPerJob: filteredJobs.map(j => ({
         name: j.title.substring(0, 15) + '...',
-        count: candidates.filter(c => c.jobId === j.id).length
+        count: filteredCandidates.filter(c => c.jobId === j.id).length
       })),
-      jobsPerUf: Object.entries(ufCounts).map(([uf, count]) => ({ uf, count }))
+      jobsPerUf: Object.entries(dashboardUfFilter ? { [dashboardUfFilter]: ufCounts[dashboardUfFilter] || 0 } : ufCounts).map(([uf, count]) => ({ uf, count }))
     };
-  }, [jobs, candidates]);
+  }, [jobs, candidates, dashboardUfFilter]);
 
   // --- Renderers ---
 
@@ -367,9 +401,18 @@ export default function App() {
               </div>
             </motion.div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
-              <Briefcase size={64} className="mb-4 opacity-20" />
-              <p className="text-xl font-medium">Selecione uma vaga para ver os detalhes</p>
+            <div className="h-full flex flex-col items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden relative group">
+              <img 
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80" 
+                alt="Equipe consultando oportunidades" 
+                className="w-full h-full object-cover opacity-70 group-hover:opacity-80 transition-opacity duration-700"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-transparent to-transparent flex flex-col items-center justify-end p-12 text-center">
+                <p className="text-white text-2xl font-black tracking-tight drop-shadow-xl">
+                  Selecione uma vaga para ver os detalhes e começar sua jornada!
+                </p>
+              </div>
             </div>
           )}
         </AnimatePresence>
@@ -501,7 +544,10 @@ export default function App() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setRecruiterTab(tab.id as any)}
+              onClick={() => {
+                setRecruiterTab(tab.id as any);
+                setSelectedCandidate(null);
+              }}
               className={cn(
                 "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all",
                 recruiterTab === tab.id 
@@ -530,8 +576,8 @@ export default function App() {
                   { label: 'Total de Vagas', value: dashboardStats.totalJobs, icon: Briefcase, color: 'blue' },
                   { label: 'Vagas Preenchidas', value: `${dashboardStats.filledPercentage.toFixed(1)}%`, icon: UserCheck, color: 'green' },
                   { label: 'Total Candidatos', value: dashboardStats.totalCandidates, icon: Users, color: 'purple' },
-                  { label: 'Vaga Mais Procurada', value: `${dashboardStats.mostWantedPercent.toFixed(1)}%`, icon: TrendingUp, color: 'orange' },
-                  { label: 'Vaga Menos Procurada', value: `${dashboardStats.leastWantedPercent.toFixed(1)}%`, icon: TrendingUp, color: 'red', rotate: true },
+                  { label: 'Vaga Mais Procurada', value: `${dashboardStats.mostWantedPercent.toFixed(1)}%`, subValue: dashboardStats.mostWantedJob, icon: TrendingUp, color: 'orange' },
+                  { label: 'Vaga Menos Procurada', value: `${dashboardStats.leastWantedPercent.toFixed(1)}%`, subValue: dashboardStats.leastWantedJob, icon: TrendingUp, color: 'red', rotate: true },
                   { label: 'UF com Mais Vagas', value: dashboardStats.ufMost, icon: Map, color: 'indigo' },
                   { label: 'UF com Menos Vagas', value: dashboardStats.ufLeast, icon: Map, color: 'pink' },
                 ].map((stat, i) => (
@@ -557,9 +603,29 @@ export default function App() {
                     <div>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
                       <p className="text-2xl font-black text-gray-900">{stat.value}</p>
+                      {stat.subValue && <p className="text-[10px] text-gray-500 font-medium truncate max-w-[120px]">{stat.subValue}</p>}
                     </div>
                   </motion.div>
                 ))}
+              </div>
+
+              {/* Charts Filter */}
+              <div className="flex items-center justify-between bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <Filter className="text-blue-500" size={20} />
+                  <h3 className="text-lg font-bold text-gray-800">Filtro dos Gráficos</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-gray-500">Filtrar por UF:</label>
+                  <select 
+                    value={dashboardUfFilter}
+                    onChange={(e) => setDashboardUfFilter(e.target.value)}
+                    className="px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-gray-50 font-bold"
+                  >
+                    <option value="">Todos os Estados</option>
+                    {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                  </select>
+                </div>
               </div>
 
               {/* Charts */}
@@ -568,8 +634,8 @@ export default function App() {
                   <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                     <BarChartIcon size={20} className="text-blue-500" /> Vagas por UF
                   </h3>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer key={recruiterTab} width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
                       <BarChart data={dashboardStats.jobsPerUf}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                         <XAxis dataKey="uf" axisLine={false} tickLine={false} />
@@ -585,8 +651,8 @@ export default function App() {
                   <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                     <PieChartIcon size={20} className="text-purple-500" /> Distribuição de Gênero
                   </h3>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer key={recruiterTab} width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
                       <PieChart>
                         <Pie
                           data={dashboardStats.genderDist}
@@ -611,8 +677,8 @@ export default function App() {
                   <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                     <BarChartIcon size={20} className="text-green-500" /> Candidatos por Vaga
                   </h3>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer key={recruiterTab} width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
                       <BarChart data={dashboardStats.candidatesPerJob} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
                         <XAxis type="number" axisLine={false} tickLine={false} />
@@ -628,63 +694,158 @@ export default function App() {
           )}
 
           {recruiterTab === 'candidates' && (
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 className="text-xl font-bold text-gray-800">Lista de Candidatos</h3>
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input className="pl-10 pr-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Buscar por nome..." />
+            <div className="space-y-6">
+              {selectedCandidate ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-2xl font-bold text-gray-800">Detalhes do Candidato: {selectedCandidate.fullName}</h3>
+                    <button 
+                      onClick={() => setSelectedCandidate(null)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors font-medium"
+                    >
+                      <X size={18} /> Voltar para Lista
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Cartão 1: Currículo */}
+                    <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl shadow-sm">
+                      <div className="flex items-center gap-2 mb-4 text-blue-600">
+                        <FileText size={20} />
+                        <h4 className="font-bold uppercase text-xs tracking-wider">Currículo do Candidato</h4>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl border border-blue-50 text-sm text-gray-700 h-[400px] overflow-y-auto whitespace-pre-wrap scrollbar-thin scrollbar-thumb-blue-200">
+                        {selectedCandidate.resume}
+                      </div>
+                    </div>
+
+                    {/* Cartão 2: Avaliação da IA */}
+                    <div className={cn(
+                      "p-6 rounded-3xl shadow-sm border",
+                      selectedCandidate.score >= 80 ? "bg-green-50 border-green-100" : 
+                      selectedCandidate.score >= 50 ? "bg-yellow-50 border-yellow-100" : 
+                      "bg-red-50 border-red-100"
+                    )}>
+                      <div className={cn(
+                        "flex items-center gap-2 mb-4",
+                        selectedCandidate.score >= 80 ? "text-green-600" : 
+                        selectedCandidate.score >= 50 ? "text-yellow-600" : 
+                        "text-red-600"
+                      )}>
+                        <TrendingUp size={20} />
+                        <h4 className="font-bold uppercase text-xs tracking-wider">Avaliação da IA</h4>
+                      </div>
+                      <div className="flex flex-col items-center justify-center h-[350px] gap-6">
+                        <div className={cn(
+                          "w-32 h-32 rounded-full flex items-center justify-center font-bold text-3xl border-8 bg-white shadow-inner",
+                          selectedCandidate.score >= 80 ? "border-green-200 text-green-600" : 
+                          selectedCandidate.score >= 50 ? "border-yellow-200 text-yellow-600" : 
+                          "border-red-200 text-red-600"
+                        )}>
+                          {selectedCandidate.score}%
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-gray-800 text-lg mb-2">
+                            {selectedCandidate.score >= 80 ? "Altamente Recomendado" : 
+                             selectedCandidate.score >= 50 ? "Potencial Compatível" : 
+                             "Baixa Compatibilidade"}
+                          </p>
+                          <p className="text-sm text-gray-600 px-4">
+                            A IA analisou as palavras-chave do currículo em relação aos requisitos da vaga e determinou um score de {selectedCandidate.score}%.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cartão 3: Descrição da Vaga */}
+                    <div className="bg-purple-50 border border-purple-100 p-6 rounded-3xl shadow-sm">
+                      <div className="flex items-center gap-2 mb-4 text-purple-600">
+                        <Briefcase size={20} />
+                        <h4 className="font-bold uppercase text-xs tracking-wider">Descrição da Vaga</h4>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl border border-purple-50 text-sm text-gray-700 h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200">
+                        <h5 className="font-bold text-gray-900 mb-2">
+                          {jobs.find(j => j.id === selectedCandidate.jobId)?.title || 'Vaga Removida'}
+                        </h5>
+                        <p className="whitespace-pre-wrap">
+                          {jobs.find(j => j.id === selectedCandidate.jobId)?.description || 'Descrição não disponível.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h3 className="text-xl font-bold text-gray-800">Lista de Candidatos</h3>
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input className="pl-10 pr-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Buscar por nome..." />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
+                        <tr>
+                          <th className="px-6 py-4">Nome</th>
+                          <th className="px-6 py-4">Vaga</th>
+                          <th className="px-6 py-4">Local-Vaga/Candidato</th>
+                          <th className="px-6 py-4">Contato</th>
+                          <th className="px-6 py-4">CPF</th>
+                          <th className="px-6 py-4 cursor-pointer hover:text-blue-600 flex items-center gap-1">
+                            Score <ArrowUpDown size={14} />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {candidates.sort((a, b) => b.score - a.score).map(c => (
+                          <tr 
+                            key={c.id} 
+                            className="hover:bg-gray-50 transition-colors cursor-pointer group"
+                            onClick={() => setSelectedCandidate(c)}
+                          >
+                            <td className="px-6 py-4">
+                              <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{c.fullName}</div>
+                              <div className="text-xs text-gray-500">{c.gender === 'M' ? 'Masculino' : 'Feminino'}</div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {jobs.find(j => j.id === c.jobId)?.title || 'Vaga Removida'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {(() => {
+                                const job = jobs.find(j => j.id === c.jobId);
+                                const jobLoc = job ? `${job.city}, ${job.uf}` : '-';
+                                return `${jobLoc} / ${c.city}, ${c.uf}`;
+                              })()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-1"><Phone size={14} /> {c.phone}</div>
+                              <div className="flex items-center gap-1"><Mail size={14} /> {c.email}</div>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-mono text-gray-500">{c.cpf}</td>
+                            <td className="px-6 py-4">
+                              <div className={cn(
+                                "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-4",
+                                c.score >= 80 ? "border-green-100 text-green-600" : 
+                                c.score >= 50 ? "border-yellow-100 text-yellow-600" : 
+                                "border-red-100 text-red-600"
+                              )}>
+                                {c.score}%
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
-                    <tr>
-                      <th className="px-6 py-4">Nome</th>
-                      <th className="px-6 py-4">Vaga</th>
-                      <th className="px-6 py-4">Localização</th>
-                      <th className="px-6 py-4">Contato</th>
-                      <th className="px-6 py-4">CPF</th>
-                      <th className="px-6 py-4 cursor-pointer hover:text-blue-600 flex items-center gap-1">
-                        Score <ArrowUpDown size={14} />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {candidates.sort((a, b) => b.score - a.score).map(c => (
-                      <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-gray-900">{c.fullName}</div>
-                          <div className="text-xs text-gray-500">{c.gender === 'M' ? 'Masculino' : 'Feminino'}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {jobs.find(j => j.id === c.jobId)?.title || 'Vaga Removida'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {c.city}, {c.uf}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1"><Phone size={14} /> {c.phone}</div>
-                          <div className="flex items-center gap-1"><Mail size={14} /> {c.email}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-mono text-gray-500">{c.cpf}</td>
-                        <td className="px-6 py-4">
-                          <div className={cn(
-                            "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-4",
-                            c.score >= 80 ? "border-green-100 text-green-600" : 
-                            c.score >= 50 ? "border-yellow-100 text-yellow-600" : 
-                            "border-red-100 text-red-600"
-                          )}>
-                            {c.score}%
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              )}
             </div>
           )}
 
@@ -708,6 +869,7 @@ export default function App() {
                       <th className="px-6 py-4">Salário</th>
                       <th className="px-6 py-4">Tipo</th>
                       <th className="px-6 py-4">Candidatos</th>
+                      <th className="px-6 py-4 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -727,6 +889,15 @@ export default function App() {
                           <span className="flex items-center gap-1 text-sm text-gray-500">
                             <Users size={16} /> {candidates.filter(c => c.jobId === j.id).length}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => setEditingJob(j)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar Vaga"
+                          >
+                            <Edit size={18} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -787,6 +958,64 @@ export default function App() {
               </form>
             </motion.div>
           )}
+
+          {/* Modal de Edição de Vaga */}
+          <Modal 
+            isOpen={!!editingJob} 
+            onClose={() => setEditingJob(null)} 
+            title="Editar Vaga"
+          >
+            {editingJob && (
+              <form onSubmit={handleUpdateJob} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-gray-700">Título da Vaga *</label>
+                    <input required name="title" defaultValue={editingJob.title} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">Cidade *</label>
+                    <input required name="city" defaultValue={editingJob.city} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">UF *</label>
+                    <select required name="uf" defaultValue={editingJob.uf} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                      {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">Salário (R$) *</label>
+                    <input required type="number" name="salary" defaultValue={editingJob.salary} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">Tipo de Vaga *</label>
+                    <select required name="type" defaultValue={editingJob.type} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                      <option value="Presencial">Presencial</option>
+                      <option value="Remoto">Remoto</option>
+                      <option value="Híbrido">Híbrido</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-gray-700">Descrição da Vaga *</label>
+                    <textarea 
+                      required 
+                      name="description" 
+                      defaultValue={editingJob.description}
+                      rows={6} 
+                      className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    ></textarea>
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-200">
+                    Salvar Alterações
+                  </button>
+                  <button type="button" onClick={() => setEditingJob(null)} className="px-6 py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-all">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            )}
+          </Modal>
         </div>
       </div>
     );
