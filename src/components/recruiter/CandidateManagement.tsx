@@ -30,6 +30,7 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Coluna 1: Currículo */}
           <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl shadow-sm">
             <div className="flex items-center gap-2 mb-4 text-blue-600">
               <FileText size={20} />
@@ -40,43 +41,7 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
             </div>
           </div>
 
-          <div className={cn(
-            "p-6 rounded-3xl shadow-sm border",
-            selectedCandidate.score >= 80 ? "bg-green-50 border-green-100" : 
-            selectedCandidate.score >= 50 ? "bg-yellow-50 border-yellow-100" : 
-            "bg-red-50 border-red-100"
-          )}>
-            <div className={cn(
-              "flex items-center gap-2 mb-4",
-              selectedCandidate.score >= 80 ? "text-green-600" : 
-              selectedCandidate.score >= 50 ? "text-yellow-600" : 
-              "text-red-600"
-            )}>
-              <TrendingUp size={20} />
-              <h4 className="font-bold uppercase text-xs tracking-wider">Avaliação da IA</h4>
-            </div>
-            <div className="flex flex-col items-center justify-center h-[350px] gap-6">
-              <div className={cn(
-                "w-32 h-32 rounded-full flex items-center justify-center font-bold text-3xl border-8 bg-white shadow-inner",
-                selectedCandidate.score >= 80 ? "border-green-200 text-green-600" : 
-                selectedCandidate.score >= 50 ? "border-yellow-200 text-yellow-600" : 
-                "border-red-200 text-red-600"
-              )}>
-                {selectedCandidate.score}%
-              </div>
-              <div className="text-center">
-                <p className="font-bold text-gray-800 text-lg mb-2">
-                  {selectedCandidate.score >= 80 ? "Altamente Recomendado" : 
-                   selectedCandidate.score >= 50 ? "Potencial Compatível" : 
-                   "Baixa Compatibilidade"}
-                </p>
-                <p className="text-sm text-gray-600 px-4">
-                  A IA analisou as palavras-chave do currículo em relação aos requisitos da vaga e determinou um score de {selectedCandidate.score}%.
-                </p>
-              </div>
-            </div>
-          </div>
-
+          {/* Coluna 2: Descrição da Vaga */}
           <div className="bg-purple-50 border border-purple-100 p-6 rounded-3xl shadow-sm">
             <div className="flex items-center gap-2 mb-4 text-purple-600">
               <Briefcase size={20} />
@@ -89,6 +54,32 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
               <p className="whitespace-pre-wrap">
                 {jobs.find(j => j.id === selectedCandidate.jobId)?.description || 'Descrição não disponível.'}
               </p>
+            </div>
+          </div>
+
+          {/* Coluna 3: Análise da IA */}
+          <div className="bg-green-50 border border-green-100 p-6 rounded-3xl shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-green-600">
+                <TrendingUp size={20} />
+                <h4 className="font-bold uppercase text-xs tracking-wider">Análise de Perfil (IA)</h4>
+              </div>
+              <span className={cn(
+                "px-3 py-1 rounded-full text-xs font-black",
+                selectedCandidate.score >= 80 ? "bg-green-100 text-green-700" :
+                selectedCandidate.score >= 50 ? "bg-yellow-100 text-yellow-700" :
+                "bg-red-100 text-red-700"
+              )}>
+                {selectedCandidate.score}% Match
+              </span>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-green-50 text-sm text-gray-700 h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-green-200">
+              <div className="prose prose-sm prose-slate max-w-none">
+                <p className="font-semibold text-gray-900 mb-3 italic">Justificativa da Inteligência Artificial:</p>
+                <p className="leading-relaxed whitespace-pre-wrap text-gray-600">
+                  {selectedCandidate.aiJustification || "Aguardando análise detalhada..."}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -116,7 +107,7 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
               <th className="px-6 py-4">Local-Vaga/Candidato</th>
               <th className="px-6 py-4">Contato</th>
               <th className="px-6 py-4">CPF</th>
-              <th className="px-6 py-4 flex items-center gap-1">Score <ArrowUpDown size={14} /></th>
+              <th className="px-6 py-4">Score</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

@@ -5,9 +5,11 @@ import { cn } from '../../utils/helpers';
 interface HeaderProps {
   view: 'candidate' | 'recruiter';
   setView: (view: 'candidate' | 'recruiter') => void;
+  isRecruiterLoggedIn?: boolean;
+  onLogout?: () => void;
 }
 
-export const Header = ({ view, setView }: HeaderProps) => (
+export const Header = ({ view, setView, isRecruiterLoggedIn, onLogout }: HeaderProps) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -37,6 +39,15 @@ export const Header = ({ view, setView }: HeaderProps) => (
           <Briefcase size={18} /> Recrutador
         </button>
       </div>
+
+      {view === 'recruiter' && isRecruiterLoggedIn && (
+        <button 
+          onClick={onLogout}
+          className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors"
+        >
+          Sair
+        </button>
+      )}
     </div>
   </header>
 );
@@ -47,4 +58,14 @@ export const Footer = () => (
       <p className="text-gray-400 text-sm">© 2026 RH Connect - Sistema de Gestão de Talentos</p>
     </div>
   </footer>
+);
+
+export const Layout = ({ children, view, setView, isRecruiterLoggedIn, onLogout }: any) => (
+  <div className="min-h-screen bg-gray-50 font-sans text-gray-900 selection:bg-blue-100 selection:text-blue-900">
+    <Header view={view} setView={setView} isRecruiterLoggedIn={isRecruiterLoggedIn} onLogout={onLogout} />
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {children}
+    </main>
+    <Footer />
+  </div>
 );

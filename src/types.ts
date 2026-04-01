@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 export type JobType = 'Remoto' | 'Presencial' | 'Híbrido';
-export type Gender = 'M' | 'F';
+export type Gender = 'M' | 'F' | 'Outro';
 
 export interface Job {
   id: string;
@@ -29,6 +24,7 @@ export interface Candidate {
   resume: string; // Text content for scoring
   gender: Gender;
   score: number;
+  aiJustification?: string;
   createdAt: string;
 }
 

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Edit, Users, Briefcase } from 'lucide-react';
+import { Edit, Users } from 'lucide-react';
 import { Job, Candidate, JobType } from '../../types';
 import { BRAZIL_STATES } from '../../constants';
 import { Modal } from '../common/Modal';
@@ -14,13 +14,23 @@ interface JobManagementProps {
 }
 
 export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onUpdateJob }: JobManagementProps) => {
+  const [ufFilter, setUfFilter] = useState('');
+
+  const filteredJobs = ufFilter 
+    ? jobs.filter(j => j.uf === ufFilter)
+    : jobs;
+
   return (
     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h3 className="text-xl font-bold text-gray-800">Vagas Cadastradas</h3>
         <div className="flex gap-2">
-          <select className="px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
-            <option value="">Filtrar por UF</option>
+          <select 
+            value={ufFilter}
+            onChange={(e) => setUfFilter(e.target.value)}
+            className="px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white font-medium"
+          >
+            <option value="">Filtrar por UF (Tudo)</option>
             {BRAZIL_STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
           </select>
         </div>
@@ -38,33 +48,41 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {jobs.map(j => (
-              <tr key={j.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-bold text-gray-900">{j.title}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{j.city}, {j.uf}</td>
-                <td className="px-6 py-4 text-sm font-semibold text-green-600">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(j.salary)}
-                </td>
-                <td className="px-6 py-4">
-                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">
-                    {j.type}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="flex items-center gap-1 text-sm text-gray-500">
-                    <Users size={16} /> {candidates.filter(c => c.jobId === j.id).length}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button 
-                    onClick={() => setEditingJob(j)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Edit size={18} />
-                  </button>
+            {filteredJobs.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 italic">
+                  Nenhuma vaga encontrada para este filtro.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredJobs.map(j => (
+                <tr key={j.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-gray-900">{j.title}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{j.city}, {j.uf}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-green-600">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(j.salary)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">
+                      {j.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="flex items-center gap-1 text-sm text-gray-500">
+                      <Users size={16} /> {candidates.filter(c => c.jobId === j.id).length}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => setEditingJob(j)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <Edit size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
