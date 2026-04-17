@@ -1,5 +1,6 @@
 import { useReducer, useEffect, useState } from 'react';
 import { Job, Candidate, Gender } from '../types';
+import { API_URL } from '../constants';
 
 type Tab = 'dashboard' | 'candidates' | 'jobs' | 'add_job';
 type View = 'candidate' | 'recruiter';
@@ -36,7 +37,6 @@ const rhReducer = (state: RhState, action: RhAction): RhState => {
   }
 };
 
-const API_URL = 'http://localhost:8001';
 
 export function useRhState() {
   const [state, dispatch] = useReducer(rhReducer, {
@@ -91,6 +91,8 @@ export function useRhState() {
             gender: c.gender as Gender,
             score: c.ai_score,
             aiJustification: c.ai_justification,
+            aiStrengths: c.ai_strengths || [],
+            aiWeaknesses: c.ai_weaknesses || [],
             resume: c.resume_text,
             createdAt: c.created_at
           }));
@@ -103,7 +105,28 @@ export function useRhState() {
       }
     };
 
+
     fetchData();
+
+    // Polling inteligente: atualiza a cada 15s enquanto algum candidato
+    // ainda estiver com análise pendente
+    const interval = setInterval(async () => {
+      const candidatesRes = await fetch(`${API_URL}/candidates`).catch(() => null);
+      if (!candidatesRes?.ok) return;
+      const data = await candidatesRes.json();
+      const hasPending = data.some(
+        (c: any) => c.ai_justification === 'Análise em andamento...'
+      );
+      if (hasPending) {
+        await fetchData();
+      } else {
+        // Para o polling assim que todas as análises terminarem
+        clearInterval(interval);
+        await fetchData();
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return {

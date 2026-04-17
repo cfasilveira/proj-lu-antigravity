@@ -25,6 +25,8 @@ export interface Candidate {
   gender: Gender;
   score: number;
   aiJustification?: string;
+  aiStrengths?: string[];
+  aiWeaknesses?: string[];
   createdAt: string;
 }
 

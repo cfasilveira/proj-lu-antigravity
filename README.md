@@ -1,20 +1,47 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="1200" height="475" alt="RH Connect Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# RH Connect - Sistema de Gestão de Talentos
 
-This contains everything you need to run your app locally.
+Plataforma moderna de recrutamento e seleção integrada com Inteligência Artificial para análise de currículos.
 
-View your app in AI Studio: https://ai.studio/apps/329aafb6-db4c-49e6-9e9a-1820e4caad04
+## 🚀 Melhorias Recentes (Abril 2026)
 
-## Run Locally
+Realizamos uma série de otimizações técnicas e de interface para levar o projeto ao nível profissional:
 
-**Prerequisites:**  Node.js
+- **Centralização de Configuração**: Toda a comunicação com a API foi centralizada em `src/constants.ts`, facilitando a manutenção e troca de ambientes.
+- **Busca Funcional de Candidatos**: Implementação de filtro em tempo real por nome na visão do recrutador, com tratamento de imutabilidade de dados.
+- **Novo Sistema de Notificações**: Substituição de alerts nativos por notificações "Toasts" fluidas via `react-hot-toast`, melhorando drasticamente a UX.
+- **Otimização de Dependências**: Limpeza profunda do `package.json`, removendo 122 pacotes desnecessários e reduzindo o tamanho do projeto em ~32MB.
+- **Correção de Estabilidade**: Sincronização ajustada para a porta `8001` do backend e tratamento de erros de conexão.
 
+## 🛠️ Tecnologias Utilizadas
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- **Frontend**: React 19, TypeScript, Vite 6, Tailwind CSS 4, Framer Motion, Lucide React, Recharts.
+- **Backend**: FastAPI (Python), Supabase (PostgreSQL), Gemini AI / Ollama.
+
+## 💻 Como Rodar Localmente
+
+### Pré-requisitos
+- Node.js (v18+)
+- Backend rodando na porta `8001`
+
+### Passo a Passo
+
+1. **Instalar Dependências**:
+   ```bash
+   npm install
+   ```
+
+2. **Configurar Variáveis**:
+   Crie um arquivo `.env` (ou use os segredos do AI Studio) com sua `GEMINI_API_KEY`.
+
+3. **Executar o App**:
+   ```bash
+   npm run dev
+   ```
+   Acesse: `http://localhost:3000`
+
+---
+*RH Connect - Conectando talentos ao futuro através da tecnologia.*

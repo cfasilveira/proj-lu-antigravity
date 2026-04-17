@@ -111,10 +111,13 @@ export const RecruiterDashboard = ({ jobs, candidates, ufFilter, setUfFilter }: 
         { name: 'M', value: filteredCandidates.filter(c => c.gender === 'M').length },
         { name: 'F', value: filteredCandidates.filter(c => c.gender === 'F').length }
       ],
-      candidatesPerJob: filteredJobs.map(j => ({
-        name: j.title,
-        count: candidates.filter(c => c.jobId === j.id).length
-      })),
+      candidatesPerJob: filteredJobs.map(j => {
+        const count = candidates.filter(c => c.jobId === j.id).length;
+        const pct = candidates.length > 0
+          ? ((count / candidates.length) * 100).toFixed(1)
+          : '0';
+        return { name: j.title, count, percent: `${pct}%` };
+      }),
       jobsPerUf: Object.entries(ufFilter ? { [ufFilter]: ufCounts[ufFilter] || 0 } : ufCounts).map(([uf, count]) => ({ uf, count }))
     };
   }, [jobs, candidates, ufFilter]);
@@ -185,11 +188,21 @@ export const RecruiterDashboard = ({ jobs, candidates, ufFilter, setUfFilter }: 
                   outerRadius={100}
                   paddingAngle={5}
                   dataKey="value"
+                  label={({ name, value }) => {
+                    const total = stats.genderDist.reduce((s, d) => s + d.value, 0);
+                    const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                    return `${name} - ${pct}%`;
+                  }}
+                  labelLine={true}
                 >
                   <Cell fill="#3b82f6" />
                   <Cell fill="#ec4899" />
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value: number) => {
+                  const total = stats.genderDist.reduce((s, d) => s + d.value, 0);
+                  const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                  return [`${value} (${pct}%)`, 'Candidatos'];
+                }} />
                 <Legend verticalAlign="bottom" height={36}/>
               </PieChart>
             </ResponsiveContainer>
@@ -213,6 +226,11 @@ export const RecruiterDashboard = ({ jobs, candidates, ufFilter, setUfFilter }: 
                     position="insideLeft" 
                     offset={12}
                     style={{ fill: '#fff', fontSize: '11px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }} 
+                  />
+                  <LabelList
+                    dataKey="percent"
+                    position="right"
+                    style={{ fill: '#10b981', fontSize: '12px', fontWeight: 'bold' }}
                   />
                 </Bar>
               </BarChart>

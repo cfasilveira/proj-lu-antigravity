@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/common/Layout';
 import { JobBoard } from './components/candidate/JobBoard';
 import { RecruiterDashboard } from './components/recruiter/Dashboard';
@@ -7,8 +8,7 @@ import { CandidateManagement } from './components/recruiter/CandidateManagement'
 import { RecruiterLogin } from './components/recruiter/Login';
 import { ApplyModal } from './components/candidate/ApplyModal';
 import { useRhState } from './hooks/useRhState';
-
-const API_URL = 'http://localhost:8001';
+import { API_URL } from './constants';
 
 export default function App() {
   const {
@@ -106,6 +106,7 @@ export default function App() {
       isRecruiterLoggedIn={isRecruiterLoggedIn}
       onLogout={() => setIsRecruiterLoggedIn(false)}
     >
+      <Toaster position="top-right" reverseOrder={false} />
       {view === 'candidate' ? (
         <JobBoard 
           jobs={jobs} 

@@ -4,6 +4,8 @@ import { BRAZIL_STATES } from '../../constants';
 import { Job, Gender, Candidate } from '../../types';
 import { validateCPF } from '../../utils/validation';
 import { CheckCircle2 } from 'lucide-react';
+import { API_URL } from '../../constants';
+import toast from 'react-hot-toast';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -25,7 +27,7 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
     const cpf = formData.get('cpf') as string;
     
     if (!validateCPF(cpf)) {
-      alert('CPF inválido! Certifique-se de digitar os 11 dígitos corretamente.');
+      toast.error('CPF inválido! Verifique os dígitos.');
       return;
     }
 
@@ -56,7 +58,7 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
       }
 
       // Chamada real para o Backend FastAPI
-      const response = await fetch('http://localhost:8001/candidates', {
+      const response = await fetch(`${API_URL}/candidates`, {
         method: 'POST',
         body: payload
       });
@@ -97,9 +99,9 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
     } catch (error: any) {
       console.error('Erro detalhado na candidatura:', error);
       const errorMessage = error.message === 'Failed to fetch' 
-        ? 'Erro de conexão com o servidor. Verifique se o backend está rodando na porta 8000.'
+        ? 'Erro de conexão com o servidor. Verifique se o backend está rodando na porta 8001.'
         : error.message;
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

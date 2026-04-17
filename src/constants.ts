@@ -176,3 +176,5 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     createdAt: new Date().toISOString()
   }
 ];
+
+export const API_URL = 'http://localhost:8001';
