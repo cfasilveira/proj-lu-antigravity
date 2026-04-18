@@ -9,9 +9,10 @@ interface JobBoardProps {
   selectedJob: Job | null;
   setSelectedJob: (job: Job | null) => void;
   onApply: () => void;
+  onApplyBanco?: () => void;
 }
 
-export const JobBoard = ({ jobs, selectedJob, setSelectedJob, onApply }: JobBoardProps) => {
+export const JobBoard = ({ jobs, selectedJob, setSelectedJob, onApply, onApplyBanco }: JobBoardProps) => {
   return (
     <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-120px)]">
       {/* Left Column: Job List */}
@@ -111,9 +112,17 @@ export const JobBoard = ({ jobs, selectedJob, setSelectedJob, onApply }: JobBoar
                 referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-transparent to-transparent flex flex-col items-center justify-end p-12 text-center">
-                <p className="text-white text-2xl font-black tracking-tight drop-shadow-xl">
+                <p className="text-white text-2xl font-black tracking-tight drop-shadow-xl mb-4">
                   Selecione uma vaga para ver os detalhes e começar sua jornada!
                 </p>
+                {onApplyBanco && (
+                  <button 
+                    onClick={onApplyBanco}
+                    className="bg-white/90 hover:bg-white text-blue-900 font-bold py-3 px-8 rounded-full transition-all shadow-xl backdrop-blur-sm"
+                  >
+                    Ou deixe seu currículo no Banco de Talentos
+                  </button>
+                )}
               </div>
             </div>
           )}

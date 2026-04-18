@@ -21,7 +21,6 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
 
   const handleRegisterCandidate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedJob) return;
 
     const formData = new FormData(e.currentTarget);
     const cpf = formData.get('cpf') as string;
@@ -35,7 +34,11 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
     try {
       // Preparar payload para o backend
       const payload = new FormData();
-      payload.append('job_id', selectedJob.id);
+      if (selectedJob) {
+        payload.append('job_id', selectedJob.id);
+      } else {
+        payload.append('job_id', 'banco-talento');
+      }
       payload.append('name', formData.get('fullName') as string);
       payload.append('email', formData.get('email') as string);
       payload.append('phone', formData.get('phone') as string);
@@ -43,6 +46,7 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
       payload.append('city', formData.get('city') as string);
       payload.append('uf', formData.get('uf') as string);
       payload.append('gender', formData.get('gender') as string);
+      payload.append('salary_expectation', formData.get('salary_expectation') as string);
 
       if (resumeType === 'text') {
         const text = formData.get('resumeText') as string;
@@ -80,6 +84,7 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
         phone: formData.get('phone') as string,
         email: data.email,
         cpf: cpf,
+        salaryExpectation: parseFloat(formData.get('salary_expectation') as string),
         resume: data.resume_text,
         gender: data.gender as Gender,
         score: data.ai_score,
@@ -130,7 +135,7 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`Candidatura: ${selectedJob?.title}`}
+      title={selectedJob ? `Candidatura: ${selectedJob.title}` : "Candidatura: Banco de Talentos"}
     >
       <form onSubmit={handleRegisterCandidate} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,6 +172,10 @@ export const ApplyModal = ({ isOpen, onClose, selectedJob, onRegister }: ApplyMo
               <option value="F">Feminino (F)</option>
               <option value="Outro">Outro / Prefiro não responder</option>
             </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-gray-700">Pretensão Salarial (R$) *</label>
+            <input required type="number" name="salary_expectation" min="0" step="100" className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00" />
           </div>
         </div>
 

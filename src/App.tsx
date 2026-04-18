@@ -5,6 +5,7 @@ import { JobBoard } from './components/candidate/JobBoard';
 import { RecruiterDashboard } from './components/recruiter/Dashboard';
 import { JobManagement, JobForm } from './components/recruiter/JobManagement';
 import { CandidateManagement } from './components/recruiter/CandidateManagement';
+import { ClientManagement } from './components/recruiter/ClientManagement';
 import { RecruiterLogin } from './components/recruiter/Login';
 import { ApplyModal } from './components/candidate/ApplyModal';
 import { useRhState } from './hooks/useRhState';
@@ -14,6 +15,7 @@ export default function App() {
   const {
     jobs,
     candidates,
+    clients,
     dispatch,
     view, setView,
     selectedJob, setSelectedJob,
@@ -25,6 +27,28 @@ export default function App() {
     editingJob, setEditingJob,
   } = useRhState();
 
+  const handleCreateClient = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const clientData = {
+      name: formData.get('name'),
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clientData),
+      });
+      if (response.ok) {
+        const newClient = await response.json();
+        dispatch({ type: 'ADD_CLIENT', payload: newClient });
+      }
+    } catch (error) {
+      console.error('Error creating client:', error);
+    }
+  };
+
   const handleCreateJob = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -35,7 +59,10 @@ export default function App() {
       city: formData.get('city'),
       uf: formData.get('uf'),
       type: formData.get('type'),
-      recruiter_id: "00000000-0000-0000-0000-000000000000" // Mock
+      client_id: formData.get('client_id'),
+      start_date: formData.get('start_date') || null,
+      end_date: formData.get('end_date') || null,
+      recruiter_id: "00000000-0000-0000-0000-000000000001" // ID do Admin no BD
     };
 
     try {
@@ -66,7 +93,10 @@ export default function App() {
       city: formData.get('city'),
       uf: formData.get('uf'),
       type: formData.get('type'),
-      recruiter_id: "00000000-0000-0000-0000-000000000000" // Mock
+      client_id: formData.get('client_id'),
+      start_date: formData.get('start_date') || null,
+      end_date: formData.get('end_date') || null,
+      recruiter_id: "00000000-0000-0000-0000-000000000001" // ID do Admin no BD
     };
 
     try {
@@ -113,6 +143,10 @@ export default function App() {
           selectedJob={selectedJob}
           setSelectedJob={setSelectedJob}
           onApply={() => setIsRegisterModalOpen(true)} 
+          onApplyBanco={() => {
+            setSelectedJob(null);
+            setIsRegisterModalOpen(true);
+          }}
         />
       ) : (
         <>
@@ -131,6 +165,12 @@ export default function App() {
                   className={`px-4 py-2 rounded-lg font-bold transition-all ${recruiterTab === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                 >
                   Dashboard
+                </button>
+                <button 
+                  onClick={() => setRecruiterTab('clients')}
+                  className={`px-4 py-2 rounded-lg font-bold transition-all ${recruiterTab === 'clients' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                >
+                  Clientes
                 </button>
                 <button 
                   onClick={() => setRecruiterTab('jobs')}
@@ -163,10 +203,17 @@ export default function App() {
                   setUfFilter={setDashboardUfFilter}
                 />
               )}
+              {recruiterTab === 'clients' && (
+                <ClientManagement 
+                  clients={clients} 
+                  onAddClient={handleCreateClient}
+                />
+              )}
               {recruiterTab === 'jobs' && (
                 <JobManagement 
                   jobs={jobs} 
                   candidates={candidates}
+                  clients={clients}
                   editingJob={editingJob}
                   setEditingJob={setEditingJob}
                   onUpdateJob={handleUpdateJob}
@@ -176,16 +223,19 @@ export default function App() {
                 <CandidateManagement 
                   candidates={candidates} 
                   jobs={jobs}
+                  clients={clients}
                   selectedCandidate={selectedCandidate}
                   setSelectedCandidate={setSelectedCandidate}
                 />
               )}
               {recruiterTab === 'add_job' && (
                 <JobForm 
+                  clients={clients}
                   onAddJob={handleCreateJob}
                   onCancel={() => setRecruiterTab('jobs')}
                 />
               )}
+
             </div>
           )}
         </>

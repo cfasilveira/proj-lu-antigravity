@@ -1,30 +1,40 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Edit, Users } from 'lucide-react';
-import { Job, Candidate, JobType } from '../../types';
+import { Job, Candidate, JobType, Client } from '../../types';
 import { BRAZIL_STATES } from '../../constants';
 import { Modal } from '../common/Modal';
 
 interface JobManagementProps {
   jobs: Job[];
   candidates: Candidate[];
+  clients: Client[];
   editingJob: Job | null;
   setEditingJob: (job: Job | null) => void;
   onUpdateJob: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onUpdateJob }: JobManagementProps) => {
+export const JobManagement = ({ jobs, candidates, clients, editingJob, setEditingJob, onUpdateJob }: JobManagementProps) => {
   const [ufFilter, setUfFilter] = useState('');
+  const [clientFilter, setClientFilter] = useState('');
 
-  const filteredJobs = ufFilter 
-    ? jobs.filter(j => j.uf === ufFilter)
-    : jobs;
+  let filteredJobs = jobs;
+  if (ufFilter) filteredJobs = filteredJobs.filter(j => j.uf === ufFilter);
+  if (clientFilter) filteredJobs = filteredJobs.filter(j => j.clientId === clientFilter);
 
   return (
     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h3 className="text-xl font-bold text-gray-800">Vagas Cadastradas</h3>
         <div className="flex gap-2">
+          <select 
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white font-medium max-w-[200px] truncate"
+          >
+            <option value="">Filtrar por Cliente (Todos)</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
           <select 
             value={ufFilter}
             onChange={(e) => setUfFilter(e.target.value)}
@@ -40,9 +50,11 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
             <tr>
               <th className="px-6 py-4">Título</th>
+              <th className="px-6 py-4">Cliente/Empresa</th>
               <th className="px-6 py-4">Localização</th>
               <th className="px-6 py-4">Salário</th>
               <th className="px-6 py-4">Tipo</th>
+              <th className="px-6 py-4">Período</th>
               <th className="px-6 py-4">Candidatos</th>
               <th className="px-6 py-4 text-right">Ações</th>
             </tr>
@@ -58,6 +70,7 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
               filteredJobs.map(j => (
                 <tr key={j.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-bold text-gray-900">{j.title}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-blue-600">{j.clientName || 'Cliente Padrão'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{j.city}, {j.uf}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-green-600">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(j.salary)}
@@ -66,6 +79,10 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
                     <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">
                       {j.type}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-gray-500 whitespace-nowrap">
+                    {j.startDate ? new Date(j.startDate).toLocaleDateString('pt-BR') : '-'} até <br/>
+                    {j.endDate ? new Date(j.endDate).toLocaleDateString('pt-BR') : '-'}
                   </td>
                   <td className="px-6 py-4">
                     <span className="flex items-center gap-1 text-sm text-gray-500">
@@ -99,6 +116,13 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
                 <label className="text-sm font-bold text-gray-700">Título da Vaga *</label>
                 <input required name="title" defaultValue={editingJob.title} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold text-gray-700">Cliente (Empresa) *</label>
+                <select required name="client_id" defaultValue={editingJob.clientId} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                  <option value="">Selecione a empresa...</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700">Cidade *</label>
                 <input required name="city" defaultValue={editingJob.city} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -120,6 +144,14 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
                   <option value="Remoto">Remoto</option>
                   <option value="Híbrido">Híbrido</option>
                 </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700">Data de Início</label>
+                <input type="date" name="start_date" defaultValue={editingJob.startDate} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700">Data de Término</label>
+                <input type="date" name="end_date" defaultValue={editingJob.endDate} className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-bold text-gray-700">Descrição da Vaga *</label>
@@ -147,7 +179,7 @@ export const JobManagement = ({ jobs, candidates, editingJob, setEditingJob, onU
   );
 };
 
-export const JobForm = ({ onAddJob, onCancel }: { onAddJob: (e: React.FormEvent<HTMLFormElement>) => void, onCancel: () => void }) => (
+export const JobForm = ({ clients, onAddJob, onCancel }: { clients: Client[], onAddJob: (e: React.FormEvent<HTMLFormElement>) => void, onCancel: () => void }) => (
   <motion.div 
     initial={{ opacity: 0, scale: 0.98 }}
     animate={{ opacity: 1, scale: 1 }}
@@ -159,6 +191,13 @@ export const JobForm = ({ onAddJob, onCancel }: { onAddJob: (e: React.FormEvent<
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-bold text-gray-700">Título da Vaga *</label>
           <input required name="title" className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Desenvolvedor Fullstack" />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-bold text-gray-700">Cliente (Empresa) *</label>
+          <select required name="client_id" className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+            <option value="">Selecione a empresa...</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-bold text-gray-700">Cidade *</label>
@@ -181,6 +220,14 @@ export const JobForm = ({ onAddJob, onCancel }: { onAddJob: (e: React.FormEvent<
             <option value="Presencial">Presencial</option>
             <option value="Híbrido">Híbrido</option>
           </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-gray-700">Data de Início</label>
+          <input type="date" name="start_date" className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-gray-700">Data de Término</label>
+          <input type="date" name="end_date" className="w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none" />
         </div>
       </div>
       <div className="space-y-2">

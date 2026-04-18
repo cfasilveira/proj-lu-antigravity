@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, FileText, TrendingUp, Briefcase, Search, ArrowUpDown, Phone, Mail } from 'lucide-react';
-import { Candidate, Job } from '../../types';
+import { Candidate, Job, Client } from '../../types';
 import { cn } from '../../utils/helpers';
+import { API_URL, INITIAL_WHATSAPP_MESSAGES } from '../../constants';
 
 interface CandidateManagementProps {
   candidates: Candidate[];
   jobs: Job[];
+  clients: Client[];
   selectedCandidate: Candidate | null;
   setSelectedCandidate: (c: Candidate | null) => void;
 }
 
-export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSelectedCandidate }: CandidateManagementProps) => {
+export const CandidateManagement = ({ candidates, jobs, clients, selectedCandidate, setSelectedCandidate }: CandidateManagementProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [jobFilter, setJobFilter] = useState('');
+  const [clientFilter, setClientFilter] = useState('');
 
-  const filteredCandidates = candidates.filter(c => 
-    c.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCandidates = candidates.filter(c => {
+    const job = jobs.find(j => j.id === c.jobId);
+    
+    const matchesSearch = c.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesJob = jobFilter ? (jobFilter === 'banco' ? c.jobId === null : c.jobId === jobFilter) : true;
+    const matchesClient = clientFilter ? (job?.clientId === clientFilter) : true;
+
+    return matchesSearch && matchesJob && matchesClient;
+  });
 
   if (selectedCandidate) {
     return (
@@ -33,6 +43,26 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
           >
             <X size={18} /> Voltar para Lista
           </button>
+        </div>
+
+        {/* Informações Básicas do Candidato */}
+        <div className="bg-white border border-gray-100 p-6 rounded-3xl shadow-sm flex flex-wrap gap-6 items-center">
+          <div>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Pretensão Salarial</p>
+            <p className="text-lg font-bold text-green-600">
+              {selectedCandidate.salaryExpectation 
+                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedCandidate.salaryExpectation) 
+                : 'Não informada'}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Contato</p>
+            <p className="text-sm font-medium text-gray-700">{selectedCandidate.email} • {selectedCandidate.phone}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Localização</p>
+            <p className="text-sm font-medium text-gray-700">{selectedCandidate.city}, {selectedCandidate.uf}</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -139,7 +169,26 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h3 className="text-xl font-bold text-gray-800">Lista de Candidatos</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <select 
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white font-medium max-w-[200px] truncate"
+          >
+            <option value="">Filtrar por Empresa (Todas)</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select 
+            value={jobFilter}
+            onChange={(e) => setJobFilter(e.target.value)}
+            className="px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white font-medium max-w-[200px] truncate"
+          >
+            <option value="">Filtrar por Vaga (Todas)</option>
+            <option value="banco">Banco de Talentos</option>
+            {jobs
+              .filter(j => clientFilter ? j.clientId === clientFilter : true)
+              .map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+          </select>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
@@ -156,11 +205,14 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
             <tr>
               <th className="px-6 py-4">Nome</th>
-              <th className="px-6 py-4">Vaga</th>
+              <th className="px-6 py-4">Empresa / Vaga</th>
               <th className="px-6 py-4">Local-Vaga/Candidato</th>
               <th className="px-6 py-4">Contato</th>
               <th className="px-6 py-4">CPF</th>
+              <th className="px-6 py-4">Pretensão</th>
               <th className="px-6 py-4">Score</th>
+              <th className="px-6 py-4">Notas</th>
+              <th className="px-6 py-4">WhatsApp</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -175,7 +227,17 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
                   <div className="text-xs text-gray-500">{c.gender === 'M' ? 'Masculino' : 'Feminino'}</div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {jobs.find(j => j.id === c.jobId)?.title || 'Vaga Removida'}
+                  {(() => {
+                    if (!c.jobId) return <div className="font-bold text-gray-500">Banco de Talentos</div>;
+                    const job = jobs.find(j => j.id === c.jobId);
+                    if (!job) return 'Vaga Removida';
+                    return (
+                      <div>
+                        <div className="font-bold text-blue-600">{job.clientName || 'Cliente Padrão'}</div>
+                        <div className="text-gray-500">{job.title}</div>
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {(() => {
@@ -189,6 +251,9 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
                   <div className="flex items-center gap-1"><Mail size={14} /> {c.email}</div>
                 </td>
                 <td className="px-6 py-4 text-sm font-mono text-gray-500">{c.cpf}</td>
+                <td className="px-6 py-4 text-sm font-semibold text-green-600">
+                  {c.salaryExpectation ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(c.salaryExpectation) : '-'}
+                </td>
                 <td className="px-6 py-4">
                   <div className={cn(
                     "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-4",
@@ -198,6 +263,50 @@ export const CandidateManagement = ({ candidates, jobs, selectedCandidate, setSe
                   )}>
                     {c.score}%
                   </div>
+                </td>
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <select 
+                    defaultValue={c.notes || ''}
+                    onChange={(e) => {
+                      const newVal = e.target.value;
+                      if (newVal !== c.notes) {
+                        fetch(`${API_URL}/candidates/${c.id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ notes: newVal })
+                        });
+                      }
+                    }}
+                    className="w-full px-2 py-1 text-[11px] border rounded outline-none focus:border-blue-500 bg-white font-medium min-w-[150px]"
+                  >
+                    <option value="">(Sem nota)</option>
+                    <option value="Agradecemos seu contato mas, no momento nao daremos sequencia ao processo.">1- Não daremos sequência</option>
+                    <option value="Agradecemos seu contato mas, a vaga ja foi fechada.">2- Vaga fechada</option>
+                    <option value="Agradecemos seu contato. Retornaremos em breve.">3- Retornaremos em breve</option>
+                    <option value="Agradecemos seu contato.">4- Agradecemos contato</option>
+                  </select>
+                </td>
+                <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={() => {
+                      const msgToSend = c.notes || "Olá! Agradecemos o seu contato.";
+                      const phone = c.phone.replace(/\D/g, '');
+                      window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msgToSend)}`, '_blank');
+                      
+                      fetch(`${API_URL}/candidates/${c.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ whatsapp_sent: true })
+                      });
+                    }}
+                    className={cn(
+                      "p-2 rounded-full transition-colors",
+                      c.whatsappSent ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500 hover:bg-green-500 hover:text-white"
+                    )}
+                    title="Enviar WhatsApp"
+                  >
+                    <Phone size={16} />
+                  </button>
                 </td>
               </tr>
             ))}

@@ -12,6 +12,7 @@ export const BRAZIL_STATES = [
 export const INITIAL_JOBS: Job[] = [
   {
     id: '1',
+    clientId: '1',
     title: 'Desenvolvedor Frontend React Sênior',
     description: 'Buscamos um desenvolvedor com sólida experiência em React, TypeScript e Tailwind CSS. Conhecimento em testes unitários e arquitetura de componentes é essencial. Experiência com Next.js e consumo de APIs REST/GraphQL será um diferencial.',
     city: 'São Paulo',
@@ -22,6 +23,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: '2',
+    clientId: '1',
     title: 'Analista de RH Pleno',
     description: 'Responsável pelo recrutamento e seleção de talentos técnicos. Necessário experiência em triagem de currículos, entrevistas por competências e integração de novos colaboradores. Conhecimento em ferramentas de gestão de RH.',
     city: 'Rio de Janeiro',
@@ -32,6 +34,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: '3',
+    clientId: '1',
     title: 'Gerente de Projetos Ágeis',
     description: 'Liderança de times multidisciplinares utilizando frameworks Scrum e Kanban. Foco em entrega de valor e melhoria contínua. Gestão de stakeholders e planejamento de sprints.',
     city: 'Belo Horizonte',
@@ -42,6 +45,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: '4',
+    clientId: '1',
     title: 'Designer UX/UI',
     description: 'Criação de interfaces intuitivas e centradas no usuário. Domínio de Figma e princípios de design system. Capacidade de realizar pesquisas com usuários e prototipagem de alta fidelidade.',
     city: 'Curitiba',
@@ -52,6 +56,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: '5',
+    clientId: '1',
     title: 'Engenheiro de Dados',
     description: 'Construção e manutenção de pipelines de dados. Experiência com Python, SQL e tecnologias de Big Data (Spark, Hadoop). Conhecimento em arquiteturas de Data Warehouse e Data Lake.',
     city: 'Florianópolis',
@@ -173,6 +178,36 @@ export const INITIAL_CANDIDATES: Candidate[] = [
     resume: 'Analista de RH com foco em treinamento e desenvolvimento. Experiência em dinâmicas de grupo.',
     gender: 'F',
     score: 60,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'c9',
+    jobId: null,
+    fullName: 'Tiago Branco',
+    city: 'Goiânia',
+    uf: 'GO',
+    phone: '(62) 90000-8888',
+    email: 'tiago.branco@email.com',
+    cpf: '901.234.567-88',
+    resume: 'Profissional generalista, buscando novas oportunidades. Tenho facilidade com vendas e atendimento.',
+    gender: 'M',
+    score: 0,
+    aiJustification: 'Candidato no Banco de Talentos. Análise de adequação genérica.',
+    createdAt: new Date().toISOString()
+  }
+];
+
+export const INITIAL_WHATSAPP_MESSAGES = [
+  {
+    id: 'm1',
+    title: 'Aprovação para Entrevista',
+    content: 'Olá {nome}! Tudo bem? Vimos seu perfil para a vaga de {vaga} e gostamos muito. Gostaria de agendar um bate-papo?',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'm2',
+    title: 'Feedback Negativo',
+    content: 'Olá {nome}, agradecemos o interesse na vaga de {vaga}. No momento seguiremos com outros perfis, mas manteremos seu currículo no nosso banco.',
     createdAt: new Date().toISOString()
   }
 ];

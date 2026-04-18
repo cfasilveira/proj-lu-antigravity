@@ -1,21 +1,24 @@
 import { useReducer, useEffect, useState } from 'react';
-import { Job, Candidate, Gender } from '../types';
+import { Job, Candidate, Gender, Client } from '../types';
 import { API_URL } from '../constants';
 
-type Tab = 'dashboard' | 'candidates' | 'jobs' | 'add_job';
+type Tab = 'dashboard' | 'candidates' | 'jobs' | 'add_job' | 'clients';
 type View = 'candidate' | 'recruiter';
 
 interface RhState {
   jobs: Job[];
   candidates: Candidate[];
+  clients: Client[];
 }
 
 type RhAction = 
   | { type: 'SET_JOBS', payload: Job[] }
   | { type: 'SET_CANDIDATES', payload: Candidate[] }
+  | { type: 'SET_CLIENTS', payload: Client[] }
   | { type: 'ADD_JOB', payload: Job }
   | { type: 'UPDATE_JOB', payload: Job }
-  | { type: 'REGISTER_CANDIDATE', payload: Candidate };
+  | { type: 'REGISTER_CANDIDATE', payload: Candidate }
+  | { type: 'ADD_CLIENT', payload: Client };
 
 const rhReducer = (state: RhState, action: RhAction): RhState => {
   switch (action.type) {
@@ -23,6 +26,8 @@ const rhReducer = (state: RhState, action: RhAction): RhState => {
       return { ...state, jobs: action.payload };
     case 'SET_CANDIDATES':
       return { ...state, candidates: action.payload };
+    case 'SET_CLIENTS':
+      return { ...state, clients: action.payload };
     case 'ADD_JOB':
       return { ...state, jobs: [action.payload, ...state.jobs] };
     case 'UPDATE_JOB':
@@ -32,6 +37,8 @@ const rhReducer = (state: RhState, action: RhAction): RhState => {
       };
     case 'REGISTER_CANDIDATE':
       return { ...state, candidates: [action.payload, ...state.candidates] };
+    case 'ADD_CLIENT':
+      return { ...state, clients: [action.payload, ...state.clients] };
     default:
       return state;
   }
@@ -41,7 +48,8 @@ const rhReducer = (state: RhState, action: RhAction): RhState => {
 export function useRhState() {
   const [state, dispatch] = useReducer(rhReducer, {
     jobs: [],
-    candidates: []
+    candidates: [],
+    clients: []
   });
 
   const [view, setView] = useState<View>('candidate');
@@ -57,24 +65,37 @@ export function useRhState() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [jobsRes, candidatesRes] = await Promise.all([
+        const [jobsRes, candidatesRes, clientsRes] = await Promise.all([
           fetch(`${API_URL}/jobs`),
-          fetch(`${API_URL}/candidates`)
+          fetch(`${API_URL}/candidates`),
+          fetch(`${API_URL}/clients`)
         ]);
 
-        if (jobsRes.ok && candidatesRes.ok) {
+        if (jobsRes.ok && candidatesRes.ok && clientsRes.ok) {
           const jobsData = await jobsRes.json();
           const candidatesData = await candidatesRes.json();
+          const clientsData = await clientsRes.json();
+
+          // Mapear Clientes
+          const mappedClients = clientsData.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            createdAt: c.created_at
+          }));
 
           // Mapear Jobs
           const mappedJobs = jobsData.map((j: any) => ({
             id: j.id,
+            clientId: j.client_id,
+            clientName: j.client_name,
             title: j.title,
             description: j.description,
             salary: j.salary,
             city: j.city,
             uf: j.uf,
             type: j.type,
+            startDate: j.start_date,
+            endDate: j.end_date,
             createdAt: j.created_at
           }));
 
@@ -89,14 +110,18 @@ export function useRhState() {
             uf: c.uf,
             cpf: c.cpf_encrypted ? '***.***.***-**' : '-',
             gender: c.gender as Gender,
+            salaryExpectation: c.salary_expectation,
             score: c.ai_score,
             aiJustification: c.ai_justification,
             aiStrengths: c.ai_strengths || [],
             aiWeaknesses: c.ai_weaknesses || [],
+            notes: c.notes,
+            whatsappSent: c.whatsapp_sent,
             resume: c.resume_text,
             createdAt: c.created_at
           }));
 
+          dispatch({ type: 'SET_CLIENTS', payload: mappedClients });
           dispatch({ type: 'SET_JOBS', payload: mappedJobs });
           dispatch({ type: 'SET_CANDIDATES', payload: mappedCandidates });
         }
