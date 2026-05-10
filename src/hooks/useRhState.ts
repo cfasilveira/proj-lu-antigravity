@@ -117,6 +117,7 @@ export function useRhState() {
             aiWeaknesses: c.ai_weaknesses || [],
             notes: c.notes,
             whatsappSent: c.whatsapp_sent,
+            hired: c.hired || false,
             resume: c.resume_text,
             createdAt: c.created_at
           }));

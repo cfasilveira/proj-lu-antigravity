@@ -100,14 +100,20 @@ export const CandidateManagement = ({ candidates, jobs, clients, selectedCandida
                 <TrendingUp size={20} />
                 <h4 className="font-bold uppercase text-xs tracking-wider">Análise de Perfil (IA)</h4>
               </div>
-              <span className={cn(
-                "px-3 py-1 rounded-full text-xs font-black",
-                selectedCandidate.score >= 80 ? "bg-green-100 text-green-700" :
-                selectedCandidate.score >= 50 ? "bg-yellow-100 text-yellow-700" :
-                "bg-red-100 text-red-700"
-              )}>
-                {selectedCandidate.score}% Match
-              </span>
+              {selectedCandidate.score === 0 && selectedCandidate.aiJustification === "Análise em andamento..." ? (
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-700 animate-pulse">
+                  ⏳ Analisando...
+                </span>
+              ) : (
+                <span className={cn(
+                  "px-3 py-1 rounded-full text-xs font-black",
+                  selectedCandidate.score >= 80 ? "bg-green-100 text-green-700" :
+                  selectedCandidate.score >= 50 ? "bg-yellow-100 text-yellow-700" :
+                  "bg-red-100 text-red-700"
+                )}>
+                  {selectedCandidate.score}% Match
+                </span>
+              )}
             </div>
             <div className="bg-white p-4 rounded-2xl border border-green-50 text-sm text-gray-700 h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-green-200 space-y-4">
               {/* Avaliação Geral */}
@@ -211,6 +217,7 @@ export const CandidateManagement = ({ candidates, jobs, clients, selectedCandida
               <th className="px-6 py-4">CPF</th>
               <th className="px-6 py-4">Pretensão</th>
               <th className="px-6 py-4">Score</th>
+              <th className="px-6 py-4">Contratado</th>
               <th className="px-6 py-4">Notas</th>
               <th className="px-6 py-4">WhatsApp</th>
             </tr>
@@ -255,14 +262,40 @@ export const CandidateManagement = ({ candidates, jobs, clients, selectedCandida
                   {c.salaryExpectation ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(c.salaryExpectation) : '-'}
                 </td>
                 <td className="px-6 py-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-4",
-                    c.score >= 80 ? "border-green-100 text-green-600" : 
-                    c.score >= 50 ? "border-yellow-100 text-yellow-600" : 
-                    "border-red-100 text-red-600"
-                  )}>
-                    {c.score}%
-                  </div>
+                  {c.score === 0 && c.aiJustification === "Análise em andamento..." ? (
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-[10px] border-4 border-blue-100 text-blue-600 animate-pulse text-center leading-tight">
+                      IA...
+                    </div>
+                  ) : (
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-4",
+                      c.score >= 80 ? "border-green-100 text-green-600" : 
+                      c.score >= 50 ? "border-yellow-100 text-yellow-600" : 
+                      "border-red-100 text-red-600"
+                    )}>
+                      {c.score}%
+                    </div>
+                  )}
+                </td>
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <select
+                    defaultValue={c.hired ? 'Sim' : 'Não'}
+                    onChange={(e) => {
+                      const isHired = e.target.value === 'Sim';
+                      fetch(`${API_URL}/candidates/${c.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ hired: isHired })
+                      });
+                    }}
+                    className={cn(
+                      "px-2 py-1 text-[11px] border rounded outline-none focus:border-blue-500 bg-white font-bold min-w-[70px]",
+                      c.hired ? "text-green-600 border-green-300" : "text-gray-500"
+                    )}
+                  >
+                    <option value="Não">Não</option>
+                    <option value="Sim">Sim</option>
+                  </select>
                 </td>
                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                   <select 

@@ -47,6 +47,7 @@ export interface Candidate {
   aiWeaknesses?: string[];
   notes?: string;
   whatsappSent?: boolean;
+  hired?: boolean;
   createdAt: string;
 }
 
